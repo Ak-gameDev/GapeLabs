@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -7,8 +8,19 @@ public class AssetBundleDownloader : MonoBehaviour
 {
     private const string assetBundleURL = "https://drive.google.com/uc?export=download&id=1Bje-TFxZlo5IwCZh9PZU_UYyP0WqUT_5";
 
-    [ContextMenu("Download Asset Bundle")]
-    public void DownloadAssetBundle()
+    private void Start()
+    {
+        DownloadAssetBundle((bundle) =>
+        {
+            GameObject player = bundle.LoadAsset<GameObject>("AssetBundle_Player");
+            if (player != null)
+            {
+                Instantiate(player);
+            }
+        });
+    }
+
+    public void DownloadAssetBundle(Action<AssetBundle> onAssetBundleDownloaded)
     {
         StartCoroutine(enumerator());
         IEnumerator enumerator()
@@ -23,7 +35,7 @@ public class AssetBundleDownloader : MonoBehaviour
                 }
 
                 AssetBundle bundle = DownloadHandlerAssetBundle.GetContent(webRequest);
-                Debug.Log($"Bundle Downloaded:::: {bundle.name}");
+                onAssetBundleDownloaded?.Invoke(bundle);
             }
         }
     }
