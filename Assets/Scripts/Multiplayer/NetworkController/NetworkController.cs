@@ -1,20 +1,20 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using System;
 using System.Linq;
-using UnityEngine.SceneManagement;
 using Photon.Pun;
 using Photon.Realtime;
 using Hashtable = ExitGames.Client.Photon.Hashtable;
 using ExitGames.Client.Photon;
-using Player = Photon.Realtime.Player;
+using Photon.Pun.Demo.Cockpit;
 
 
 public class NetworkController : MonoBehaviourPunCallbacks, IInRoomCallbacks, IOnEventCallback
 {
     [Header("SCRIPTS")]
     //[SerializeField] GameManager gamemanager;
+
+    [SerializeField] private UIHandler uiHandler;
 
 
     [SerializeField] TypedLobby FreeToPlayLobby = new("FreeLobby", LobbyType.Default);
@@ -32,10 +32,12 @@ public class NetworkController : MonoBehaviourPunCallbacks, IInRoomCallbacks, IO
     {
         PhotonNetwork.AddCallbackTarget(this);
     }
+
     new private void OnDisable()
     {
         PhotonNetwork.RemoveCallbackTarget(this);
     }
+
     private void SetPlayerCustomPropsOnLobbyJoining()
     {
         Hashtable prop = new();
@@ -47,13 +49,17 @@ public class NetworkController : MonoBehaviourPunCallbacks, IInRoomCallbacks, IO
         //gamemanager.localPlayer.NickName = gamemanager.GetPlayerName();
         //gamemanager.localPlayer.SetCustomProperties(prop);
     }
-    internal void ConnectServer_JoinLobby()
+
+    public void ConnectServer()
     {
         StartCoroutine(IConnectServer());
     }
+
     private IEnumerator IConnectServer()
     {
         //HelperScript.LoadingPanel(true, "Connecting to Server");
+
+        uiHandler.ShowLoading(true);
 
         if (PhotonNetwork.IsConnected)
         {
@@ -63,32 +69,42 @@ public class NetworkController : MonoBehaviourPunCallbacks, IInRoomCallbacks, IO
 
         PhotonNetwork.ConnectUsingSettings();
     }
+
     public override void OnConnectedToMaster()
     {
+        Debug.Log("BT_A1::: Connected To Server... ");
+
+        uiHandler.OnServerConnected();
+        uiHandler.ShowLoading(false);
         //HelperScript.LoadingPanel(false);
         //gamemanager.localPlayer = PhotonNetwork.LocalPlayer;
         //lobbyPlayerPrefabList.Clear();
 
         JoinLobby();
     }
+
     public override void OnDisconnected(DisconnectCause cause)
     {
         //gamemanager.isPlayingGame = false;
         //CustomActions._OnDisposeObjectsOnLeavingNetwork?.Invoke();
     }
+
     private void JoinLobby()
     {
         //HelperScript.LoadingPanel(true, "Joining Lobby");
 
         PhotonNetwork.JoinLobby(FreeToPlayLobby);
     }
+
     public override void OnJoinedLobby()
     {
+        Debug.Log("BT_A2::: Lobby Joined...");
         //HelperScript.LoadingPanel(false);
 
         SetPlayerCustomPropsOnLobbyJoining();
     }
-    internal void JoinCreatedRoom()
+
+    public void Join_CreatRoom()
     {
         //HelperScript.LoadingPanel(true, "Joining Room");
 
@@ -101,27 +117,33 @@ public class NetworkController : MonoBehaviourPunCallbacks, IInRoomCallbacks, IO
 
         PhotonNetwork.JoinOrCreateRoom("Room_Name", ops, FreeToPlayLobby);
     }
+
     public override void OnJoinedRoom() //LOCAL CALLBACK
     {
+        Debug.Log("BT_A3::: Room Joined...");
         PlayerCountCheck();
 
         //HelperScript.LoadingPanel(true, "Getting Room Data...");
 
         //gamemanager.uiController.LoadLobbyRoom();
 
-        List<Photon.Realtime.Player> plList = new();
+        //List<Photon.Realtime.Player> plList = new();
 
-        foreach (var info in PhotonNetwork.PlayerList)
-        {
-            plList.Add(info);
-        }
+        //foreach (var info in PhotonNetwork.PlayerList)
+        //{
+        //    plList.Add(info);
+        //}
 
-        plList = plList.OrderBy(x => x.ActorNumber).ToList();
+        //plList = plList.OrderBy(x => x.ActorNumber).ToList();
 
-        foreach (var p in plList)
-        {
-            SpawnLobbyEntity(p);
-        }
+        //foreach (var p in plList)
+        //{
+        //    SpawnLobbyEntity(p);
+        //}
+
+        var photonView = PhotonNetwork.Instantiate("Player", new Vector3(0, 0.5f, 0), Quaternion.identity).GetComponent<PhotonView>();
+
+        uiHandler.OnRoomJoined();
     }
 
     public override void OnCreateRoomFailed(short returnCode, string message)
@@ -129,12 +151,13 @@ public class NetworkController : MonoBehaviourPunCallbacks, IInRoomCallbacks, IO
         //HelperScript.LoadingPanel(false);
         //HelperScript.ShowNetworkError(returnCode);
     }
+
     public override void OnPlayerEnteredRoom(Photon.Realtime.Player newPlayer) //CALLBACK TO OTHERS
     {
-        SpawnLobbyEntity(newPlayer);
-
+        Debug.Log("BT_A4::: Player Entered Room.");
         PlayerCountCheck();
     }
+
     private void SpawnLobbyEntity(Photon.Realtime.Player player)
     {
         //int index = lobbyPlayerPrefabList.FindIndex(x => x.thisPlayer == player);
@@ -151,10 +174,12 @@ public class NetworkController : MonoBehaviourPunCallbacks, IInRoomCallbacks, IO
         //lobbyP.InitData(player);
         //lobbyPlayerPrefabList.Add(lobbyP);
     }
+
     public override void OnLeftRoom() //Local Callback
     {
         //gamemanager.isPlayingGame = false;
     }
+
     public override void OnPlayerLeftRoom(Photon.Realtime.Player otherPlayer) //Other Players
     {
         //CustomActions._OnPlayerLeftRoom?.Invoke(otherPlayer.ActorNumber);
@@ -204,6 +229,7 @@ public class NetworkController : MonoBehaviourPunCallbacks, IInRoomCallbacks, IO
         //    }
         //}
     }
+
     private void PlayerCountCheck()
     {
         if (PhotonNetwork.IsMasterClient)
@@ -211,11 +237,13 @@ public class NetworkController : MonoBehaviourPunCallbacks, IInRoomCallbacks, IO
 
         //gamemanager.uiController.UpdateLobbyPlayerCountOnUI(PhotonNetwork.PlayerList.Length, PhotonNetwork.CurrentRoom.MaxPlayers);
     }
+
     public override void OnJoinRoomFailed(short returnCode, string message)
     {
         //HelperScript.LoadingPanel(false);
         //HelperScript.ShowNetworkError(returnCode);
     }
+
     public override void OnRoomListUpdate(List<RoomInfo> roomList)
     {
         currentLobbyRoomList.Clear();
@@ -228,10 +256,12 @@ public class NetworkController : MonoBehaviourPunCallbacks, IInRoomCallbacks, IO
             }
         }
     }
+
     internal List<RoomInfo> GetUpdatedRoomInfo()
     {
         return currentLobbyRoomList;
     }
+
     public override void OnPlayerPropertiesUpdate(Photon.Realtime.Player targetPlayer, Hashtable changedProps) //Global Callback
     {
         //if (changedProps.ContainsKey(NetworkPropertyKeys._PlayerUpdatedTeam))
@@ -326,6 +356,7 @@ public class NetworkController : MonoBehaviourPunCallbacks, IInRoomCallbacks, IO
         //    }
         //}
     }
+
     public override void OnRoomPropertiesUpdate(Hashtable propertiesThatChanged) //Global Callbacks (Players in the rooms)
     {
         //if (propertiesThatChanged.ContainsKey(NetworkPropertyKeys._RoomLevelIndex))
@@ -334,6 +365,7 @@ public class NetworkController : MonoBehaviourPunCallbacks, IInRoomCallbacks, IO
         //    CustomActions._OnLevelChangedInLobby?.Invoke(levelIndex);
         //}
     }
+
     private void CheckIfAllPlayersReady()
     {
         //if (PhotonNetwork.CurrentRoom.PlayerCount == PhotonNetwork.CurrentRoom.MaxPlayers && lobbyPlayerPrefabList.All(x => x.isReadyUp == true))
@@ -343,12 +375,14 @@ public class NetworkController : MonoBehaviourPunCallbacks, IInRoomCallbacks, IO
         //    NetworkRaiseEvent.RaiseEVT(NetworkEventCodes._SpawnPlayerEntityCode, ReceiverGroup.All);
         //}
     }
+
     private void DeclareMyResult()
     {
         //Hashtable prop = new();
         //prop.Add(NetworkPropertyKeys._PlayerWinPosition, gamemanager.uiController.playerResultList.Count + 1);
         //PhotonNetwork.LocalPlayer.SetCustomProperties(prop);
     }
+
     public void OnEvent(EventData photonEvent)
     {
         if (photonEvent.Code == NetworkEventCodes._SpawnPlayerEntityCode)
@@ -389,6 +423,7 @@ public class NetworkController : MonoBehaviourPunCallbacks, IInRoomCallbacks, IO
         //    CustomActions._OnPlayerStartMovingPiece?.Invoke(viewID, stepsCount);
         //}
     }
+
     internal void EndCurrentSession()
     {
         if (PhotonNetwork.InRoom)
