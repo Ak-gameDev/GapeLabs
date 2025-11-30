@@ -1,38 +1,70 @@
+using System;
 using System.Collections;
-using System.Collections.Generic;
-using System.Net;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 using UnityEngine.ResourceManagement.AsyncOperations;
-using UnityEngine.ResourceManagement.ResourceLocations;
+using UnityEngine.SceneManagement;
 
 public class AddresablesDemo : MonoBehaviour
 {
-    private IEnumerator Start()
+    public AddresablesDemo instance { get; private set; }
+
+    private GameObject cachedObject = null;
+
+    private void Awake()
     {
-        var init = Addressables.InitializeAsync();
-        yield return init;
-
-        var go = Addressables.LoadAssetAsync<GameObject>("Addressables_Player");
-        yield return go;
-
-        if (go.Status == AsyncOperationStatus.Succeeded)
+        if (instance == null)
         {
-            GameObject prefab = go.Result;
+            instance = this;
+            DontDestroyOnLoad(instance);
+        }
+    }
 
-            var instHandle = Addressables.InstantiateAsync("Addressables_Player", Vector3.zero, Quaternion.identity);
-            yield return instHandle;
+    private void Start()
+    {
+        InitPopUp();
 
-            if (instHandle.Status == AsyncOperationStatus.Succeeded)
+        SceneManager.LoadScene(1);
+    }
+
+    public void GetAsset(string name, Action<GameObject> onComplete)
+    {
+        if (cachedObject != null && cachedObject.name.Equals(name))
+        {
+            onComplete?.Invoke(cachedObject);
+            return;
+        }
+
+        StartCoroutine(IGetAsset());
+        IEnumerator IGetAsset()
+        {
+            var asset = Addressables.LoadAssetAsync<GameObject>(name);
+            yield return asset;
+
+            if (asset.Status == AsyncOperationStatus.Succeeded)
             {
-                GameObject instance = instHandle.Result;
+                var objInst = Addressables.InstantiateAsync(name);
+                yield return objInst;
+
+                if (objInst.Status == AsyncOperationStatus.Succeeded)
+                {
+                    onComplete?.Invoke(objInst.Result);
+                }
             }
             else
             {
-                Debug.LogError("Instantiate failed: " + instHandle.OperationException);
+                Debug.Log("Something Went Wrong");
             }
 
-            Addressables.Release(go);
+            Addressables.Release(asset);
         }
+    }
+
+    private void InitPopUp()
+    {
+        GetAsset("PopUp", (obj) =>
+        {
+            DontDestroyOnLoad(obj);
+        });
     }
 }

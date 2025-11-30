@@ -19,7 +19,7 @@ public class Player : MonoBehaviourPun
     {
         playerRigidBody = GetComponent<Rigidbody>();
         joystick = FindObjectOfType<Joystick>();
-
+            
         if (!photonView.IsMine)
         {
             enabled = false;

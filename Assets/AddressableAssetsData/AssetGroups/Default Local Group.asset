@@ -17,14 +17,8 @@ MonoBehaviour:
     m_SerializedData: []
   m_GUID: 841c56dd08b447444bbec5896752435e
   m_SerializeEntries:
-  - m_GUID: 1e1534999c75ded42b4bfced7112d92a
-    m_Address: Addressables_Player
-    m_ReadOnly: 0
-    m_SerializedLabels:
-    - default
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 34711761bdcf97e47a4e46cbd54c317e
-    m_Address: Addressables_Player_Material
+  - m_GUID: 40cb5ee36c610524583f808a6c4b3633
+    m_Address: PopUp
     m_ReadOnly: 0
     m_SerializedLabels:
     - default
